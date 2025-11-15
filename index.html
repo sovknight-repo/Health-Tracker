@@ -1,0 +1,668 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='red' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'%3E%3C/path%3E%3C/svg%3E" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Health Tracker</title>
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIkhlYWx0aFRyYWNrZXIiLAogICJuYW1lIjogIkhlYWx0aCBUcmFja2VyIFBXQSIsCiAgImRlc2NyaXB0aW9uIjogIkFuIG9mZmxpbmUtZmlyc3QgUFdBIGZvciBsb2dnaW5nIGFuZCB2aXN1YWxpemluZyBoZWFsdGggZGF0YS4iLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY3ZNQzl5YVhsaGJyd3VZMjl0TDNSd2IyOWtMbkJvY0hCVGIydGxkR1V6TDJWdFlXMXdiR1V1WTI5dEwzZDNkeTVuY21WaFpHVnBiR2w0TDNCNFpYTnpkMjl5WkY5amIyNTBMM0JzYVdWdWRHbDBlV3hsTDNCMVpXNXpaWEp6TDBaSlRFbEJVRUZDVW1Ob1pXRnBibWN0Wlc1a1pXeGxhV2RvZEhsd1pUNWpiMjB2Ylc5a2FXeHBaMmgwUFNJNU9UQXhMakF3TUM4eU1TNHhMamN2Wm1sc2JEMGlabWxzYkQwaWFXNWpiR3d2YTI5dWJtVjNKeTVqYjIwdVluVnBiQzh4SURJdU1UU3hMakk9IiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIDUxMng1MTIiLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJ0aGVtZV9jb2xvciI6ICIjNGY0NmU1IiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjhmYWZjIgp9Cg==">
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.548.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-50 dark:bg-slate-900">
+    <div id="root"></div>
+    <script type="module">
+// --- React & Libs Imports ---
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ReactDOM from 'react-dom/client';
+import { HeartPulse, PlusCircle, Trash2, BarChart as BarChartIcon, Activity, Droplets, TrendingUp, TrendingDown, Minus, Scale } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+// --- Start of types.ts ---
+const BPCategory = {
+    NORMAL: 'Normal',
+    ELEVATED: 'Elevated',
+    HYPERTENSION_STAGE_1: 'Hypertension Stage 1',
+    HYPERTENSION_STAGE_2: 'Hypertension Stage 2',
+    HYPERTENSIVE_CRISIS: 'Hypertensive Crisis',
+};
+
+const bpCategoryColors = {
+    [BPCategory.NORMAL]:               { text: 'text-green-600 dark:text-green-400', background: 'bg-green-100 dark:bg-green-900/50', dot: '#22c55e' },
+    [BPCategory.ELEVATED]:             { text: 'text-yellow-600 dark:text-yellow-400', background: 'bg-yellow-100 dark:bg-yellow-900/50', dot: '#eab308' },
+    [BPCategory.HYPERTENSION_STAGE_1]: { text: 'text-orange-600 dark:text-orange-400', background: 'bg-orange-100 dark:bg-orange-900/50', dot: '#f97316' },
+    [BPCategory.HYPERTENSION_STAGE_2]: { text: 'text-red-600 dark:text-red-400', background: 'bg-red-100 dark:bg-red-900/50', dot: '#ef4444' },
+    [BPCategory.HYPERTENSIVE_CRISIS]:  { text: 'text-red-800 dark:text-red-500', background: 'bg-red-200 dark:bg-red-900', dot: '#b91c1c' },
+};
+
+const getBloodPressureCategory = (systolic, diastolic) => {
+    if (systolic > 180 || diastolic > 120) {
+        return BPCategory.HYPERTENSIVE_CRISIS;
+    }
+    if (systolic >= 140 || diastolic >= 90) {
+        return BPCategory.HYPERTENSION_STAGE_2;
+    }
+    if (systolic >= 130 || diastolic >= 80) {
+        return BPCategory.HYPERTENSION_STAGE_1;
+    }
+    // To be "Elevated", systolic must be 120-129 AND diastolic must be < 80.
+    // The previous checks have already confirmed diastolic < 80 if we reach this point.
+    if (systolic >= 120) {
+        return BPCategory.ELEVATED;
+    }
+    // If none of the above conditions are met, it's "Normal".
+    // This implies systolic < 120 AND diastolic < 80.
+    return BPCategory.NORMAL;
+};
+// --- End of types.ts ---
+
+// --- Start of components/ReadingForm.tsx ---
+const ReadingForm = ({ onAddReading }) => {
+    const initialReadingState = [{ systolic: '', diastolic: '' }, { systolic: '', diastolic: '' }, { systolic: '', diastolic: '' }];
+    const [readings, setReadings] = useState(initialReadingState);
+    const [error, setError] = useState('');
+
+    const handleInputChange = (index, field, value) => {
+        const newReadings = [...readings];
+        newReadings[index][field] = value;
+        setReadings(newReadings);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+
+        let totalSystolic = 0;
+        let totalDiastolic = 0;
+        
+        for (let i = 0; i < readings.length; i++) {
+            const { systolic, diastolic } = readings[i];
+
+            const sys = parseInt(systolic, 10);
+            const dia = parseInt(diastolic, 10);
+
+            if (isNaN(sys) || isNaN(dia) || sys <= 0 || dia <= 0) {
+                setError(`Please enter valid, positive numbers for Reading ${i + 1}.`);
+                return;
+            }
+
+            if (sys <= dia) {
+                setError(`Systolic pressure must be higher than diastolic for Reading ${i + 1}.`);
+                return;
+            }
+
+            totalSystolic += sys;
+            totalDiastolic += dia;
+        }
+
+        const avgSystolic = Math.round(totalSystolic / 3);
+        const avgDiastolic = Math.round(totalDiastolic / 3);
+
+        onAddReading({
+            systolic: avgSystolic,
+            diastolic: avgDiastolic,
+            date: new Date().toISOString(),
+        });
+        
+        setReadings(initialReadingState);
+    };
+
+    return (
+        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg" },
+            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4 text-slate-800 dark:text-slate-200" }, "Add New Reading (3-Reading Average)"),
+            React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                readings.map((reading, index) => (
+                    React.createElement('div', { key: index, className: "p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg" },
+                        React.createElement('h3', { className: "text-sm font-medium text-slate-600 dark:text-slate-400 mb-2" }, `Reading ${index + 1}`),
+                        React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { htmlFor: `systolic-${index}`, className: "sr-only" }, `Systolic ${index + 1}`),
+                                React.createElement('input', {
+                                    type: "number",
+                                    id: `systolic-${index}`,
+                                    value: reading.systolic,
+                                    onChange: (e) => handleInputChange(index, 'systolic', e.target.value),
+                                    placeholder: "Systolic",
+                                    className: "block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { htmlFor: `diastolic-${index}`, className: "sr-only" }, `Diastolic ${index + 1}`),
+                                React.createElement('input', {
+                                    type: "number",
+                                    id: `diastolic-${index}`,
+                                    value: reading.diastolic,
+                                    onChange: (e) => handleInputChange(index, 'diastolic', e.target.value),
+                                    placeholder: "Diastolic",
+                                    className: "block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
+                                    required: true
+                                })
+                            )
+                        )
+                    )
+                )),
+                error && React.createElement('p', { className: "text-sm text-red-500" }, error),
+                React.createElement('button', { type: "submit", className: "w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" },
+                    React.createElement(PlusCircle, { size: 20 }),
+                    "Add Average Reading"
+                )
+            )
+        )
+    );
+};
+// --- End of components/ReadingForm.tsx ---
+
+// --- Start of components/ReadingsTable.tsx ---
+const ReadingsTable = ({ readings, onDeleteReading }) => {
+    if (readings.length === 0) {
+        return React.createElement('p', { className: "text-center text-slate-500 dark:text-slate-400 py-4" }, "No readings recorded yet.");
+    }
+
+    return (
+        React.createElement('div', { className: "overflow-x-auto" },
+            React.createElement('table', { className: "min-w-full divide-y divide-slate-200 dark:divide-slate-700" },
+                React.createElement('thead', { className: "bg-slate-50 dark:bg-slate-700" },
+                    React.createElement('tr', null,
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Date"),
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Time"),
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Systolic"),
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Diastolic"),
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Category"),
+                        React.createElement('th', { scope: "col", className: "relative px-6 py-3" }, React.createElement('span', { className: "sr-only" }, "Delete"))
+                    )
+                ),
+                React.createElement('tbody', { className: "bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700" },
+                    readings.slice(-6).reverse().map((reading) => {
+                        const category = getBloodPressureCategory(reading.systolic, reading.diastolic);
+                        const colors = bpCategoryColors[category];
+                        return (
+                        React.createElement('tr', { key: reading.id },
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300" }, new Date(reading.date).toLocaleDateString()),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400" }, new Date(reading.date).toLocaleTimeString()),
+                            React.createElement('td', { className: `px-6 py-4 whitespace-nowrap text-sm font-semibold ${colors.text}` }, reading.systolic),
+                            React.createElement('td', { className: `px-6 py-4 whitespace-nowrap text-sm font-semibold ${colors.text}` }, reading.diastolic),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm" },
+                                React.createElement('span', { className: `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colors.background} ${colors.text}` }, category)
+                            ),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium" },
+                                React.createElement('button', { onClick: () => onDeleteReading(reading.id), className: "text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors", "aria-label": `Delete reading from ${new Date(reading.date).toLocaleString()}` },
+                                    React.createElement(Trash2, { size: 18 })
+                                )
+                            )
+                        )
+                    )})
+                )
+            )
+        )
+    );
+};
+// --- End of components/ReadingsTable.tsx ---
+
+// --- Start of components/PressureChart.tsx ---
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const category = getBloodPressureCategory(data.systolic, data.diastolic);
+    const colors = bpCategoryColors[category];
+    return (
+      React.createElement('div', { className: "p-4 bg-slate-800/80 backdrop-blur-sm border border-slate-600 rounded-lg shadow-lg text-sm" },
+        React.createElement('p', { className: "label text-slate-300 font-semibold mb-2" }, `${label}`),
+        React.createElement('p', { className: "intro", style: { color: '#ef4444' } }, `Avg. Systolic: ${data.systolic}`),
+        React.createElement('p', { className: "intro", style: { color: '#3b82f6' } }, `Avg. Diastolic: ${data.diastolic}`),
+        React.createElement('p', { className: `font-semibold mt-2 ${colors.text}` }, `${category} (3-reading avg)`)
+      )
+    );
+  }
+  return null;
+};
+
+const PressureChart = ({ data }) => {
+    const chartData = useMemo(() => {
+        if (data.length < 3) return [];
+        
+        const movingAverageData = [];
+        for (let i = 2; i < data.length; i++) {
+            const slice = data.slice(i - 2, i + 1);
+            const avgSystolic = slice.reduce((sum, r) => sum + r.systolic, 0) / 3;
+            const avgDiastolic = slice.reduce((sum, r) => sum + r.diastolic, 0) / 3;
+            movingAverageData.push({
+                name: new Date(data[i].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                systolic: Math.round(avgSystolic),
+                diastolic: Math.round(avgDiastolic),
+            });
+        }
+        return movingAverageData;
+    }, [data]);
+
+    if (chartData.length === 0) {
+        return React.createElement('div', { className: "flex items-center justify-center h-full" }, React.createElement('p', { className: "text-slate-500 dark:text-slate-400" }, "Add at least three readings to see a trend chart."));
+    }
+    
+    const domain = [
+        Math.min(...chartData.map(d => d.diastolic)) - 10,
+        Math.max(...chartData.map(d => d.systolic)) + 10,
+    ];
+
+    return (
+        React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
+            React.createElement(BarChart, { data: chartData, margin: { top: 5, right: 20, left: -10, bottom: 5 } },
+                React.createElement(CartesianGrid, { strokeDasharray: "3 3", strokeOpacity: 0.2 }),
+                React.createElement(XAxis, { dataKey: "name", stroke: "currentColor" }),
+                React.createElement(YAxis, { stroke: "currentColor", domain: domain }),
+                React.createElement(Tooltip, { content: React.createElement(CustomTooltip) }),
+                React.createElement(Legend),
+                React.createElement(Bar, { dataKey: "systolic", fill: "#ef4444", name: "Avg. Systolic" }),
+                React.createElement(Bar, { dataKey: "diastolic", fill: "#3b82f6", name: "Avg. Diastolic" })
+            )
+        )
+    );
+};
+// --- End of components/PressureChart.tsx ---
+
+// --- Start of components/SummaryStats.tsx ---
+const StatCard = ({ title, value, unit, icon }) => (
+    React.createElement('div', { className: "flex items-center p-4 bg-slate-100 dark:bg-slate-700 rounded-lg" },
+        React.createElement('div', { className: "p-3 mr-4 text-indigo-500 bg-indigo-100 dark:bg-slate-600 dark:text-indigo-300 rounded-full" }, icon),
+        React.createElement('div', null,
+            React.createElement('p', { className: "text-sm font-medium text-slate-500 dark:text-slate-400 group-hover:text-slate-600" }, title),
+            React.createElement('p', { className: "text-xl font-semibold text-slate-700 dark:text-slate-200" },
+                value, " ", React.createElement('span', { className: "text-sm font-normal" }, unit)
+            )
+        )
+    )
+);
+
+const SummaryStats = ({ stats }) => {
+    return (
+        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg" },
+            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4" }, "Averages"),
+            React.createElement('div', { className: "space-y-4" },
+                React.createElement(StatCard, { title: "Avg. Systolic", value: stats.avgSystolic || '--', unit: "mm Hg", icon: React.createElement(BarChartIcon, { size: 24 }) }),
+                React.createElement(StatCard, { title: "Avg. Diastolic", value: stats.avgDiastolic || '--', unit: "mm Hg", icon: React.createElement(Activity, { size: 24 }) }),
+                React.createElement(StatCard, { title: "Avg. Pulse Pressure", value: stats.avgPulse || '--', unit: "mm Hg", icon: React.createElement(Droplets, { size: 24 }) })
+            )
+        )
+    );
+};
+// --- End of components/SummaryStats.tsx ---
+
+// --- Start of components/WeightForm.tsx ---
+const WeightForm = ({ onAddReading }) => {
+    const [weight, setWeight] = useState('');
+    const [error, setError] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const w = parseFloat(weight);
+
+        if (isNaN(w) || w <= 0) {
+            setError('Please enter a valid, positive number for weight.');
+            return;
+        }
+
+        setError('');
+        onAddReading({
+            weight: w,
+            date: new Date().toISOString(),
+        });
+        setWeight('');
+    };
+
+    return (
+        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg" },
+            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4 text-slate-800 dark:text-slate-200" }, "Add New Weight Reading"),
+            React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                React.createElement('div', null,
+                    React.createElement('label', { htmlFor: "weight", className: "block text-sm font-medium text-slate-600 dark:text-slate-400" }, "Weight (lbs)"),
+                    React.createElement('input', { type: "number", id: "weight", step: "0.1", value: weight, onChange: (e) => setWeight(e.target.value), placeholder: "e.g., 180.5", className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", required: true })
+                ),
+                error && React.createElement('p', { className: "text-sm text-red-500" }, error),
+                React.createElement('button', { type: "submit", className: "w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" },
+                    React.createElement(PlusCircle, { size: 20 }),
+                    "Add Weight"
+                )
+            )
+        )
+    );
+};
+// --- End of components/WeightForm.tsx ---
+
+// --- Start of components/WeightTable.tsx ---
+const WeightTable = ({ readings, onDeleteReading }) => {
+    if (readings.length === 0) {
+        return React.createElement('p', { className: "text-center text-slate-500 dark:text-slate-400 py-4" }, "No weight readings recorded yet.");
+    }
+
+    return (
+        React.createElement('div', { className: "overflow-x-auto" },
+            React.createElement('table', { className: "min-w-full divide-y divide-slate-200 dark:divide-slate-700" },
+                React.createElement('thead', { className: "bg-slate-50 dark:bg-slate-700" },
+                    React.createElement('tr', null,
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Date"),
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Time"),
+                        React.createElement('th', { scope: "col", className: "px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider" }, "Weight (lbs)"),
+                        React.createElement('th', { scope: "col", className: "relative px-6 py-3" }, React.createElement('span', { className: "sr-only" }, "Delete"))
+                    )
+                ),
+                React.createElement('tbody', { className: "bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700" },
+                    readings.slice(-6).reverse().map((reading) => (
+                        React.createElement('tr', { key: reading.id },
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300" }, new Date(reading.date).toLocaleDateString()),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400" }, new Date(reading.date).toLocaleTimeString()),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-slate-100" }, reading.weight.toFixed(1)),
+                            React.createElement('td', { className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium" },
+                                React.createElement('button', { onClick: () => onDeleteReading(reading.id), className: "text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors", "aria-label": `Delete reading from ${new Date(reading.date).toLocaleString()}` },
+                                    React.createElement(Trash2, { size: 18 })
+                                )
+                            )
+                        )
+                    ))
+                )
+            )
+        )
+    );
+};
+// --- End of components/WeightTable.tsx ---
+
+// --- Start of components/WeightChart.tsx ---
+const WeightChart = ({ data }) => {
+    if (data.length < 2) {
+        return React.createElement('div', { className: "flex items-center justify-center h-full" }, React.createElement('p', { className: "text-slate-500 dark:text-slate-400" }, "Add at least two readings to see a trend chart."));
+    }
+
+    const chartData = data.map(reading => ({
+        name: new Date(reading.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        weight: reading.weight,
+    }));
+    
+    const domain = [
+        Math.min(...data.map(d => d.weight)) - 5,
+        Math.max(...data.map(d => d.weight)) + 5,
+    ];
+
+    return (
+        React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
+            React.createElement(LineChart, { data: chartData, margin: { top: 5, right: 20, left: -10, bottom: 5 } },
+                React.createElement(CartesianGrid, { strokeDasharray: "3 3", strokeOpacity: 0.2 }),
+                React.createElement(XAxis, { dataKey: "name", stroke: "currentColor" }),
+                React.createElement(YAxis, { stroke: "currentColor", domain: domain, unit: " lbs" }),
+                React.createElement(Tooltip, {
+                    contentStyle: { backgroundColor: 'rgba(30, 41, 59, 0.8)', borderColor: '#475569', borderRadius: '0.5rem' },
+                    labelStyle: { color: '#f1f5f9' },
+                    formatter: (value) => [`${value.toFixed(1)} lbs`, "Weight"]
+                }),
+                React.createElement(Legend),
+                React.createElement(Line, { type: "monotone", dataKey: "weight", stroke: "#10b981", activeDot: { r: 8 }, name: "Weight (lbs)" })
+            )
+        )
+    );
+};
+// --- End of components/WeightChart.tsx ---
+
+// --- Start of components/WeightSummary.tsx ---
+const WeightStatCard = ({ title, value, unit, icon }) => (
+    React.createElement('div', { className: "flex items-center p-4 bg-slate-100 dark:bg-slate-700 rounded-lg" },
+        React.createElement('div', { className: "p-3 mr-4 text-emerald-500 bg-emerald-100 dark:bg-slate-600 dark:text-emerald-300 rounded-full" }, icon),
+        React.createElement('div', null,
+            React.createElement('p', { className: "text-sm font-medium text-slate-500 dark:text-slate-400" }, title),
+            React.createElement('p', { className: "text-xl font-semibold text-slate-700 dark:text-slate-200" },
+                value, " ", React.createElement('span', { className: "text-sm font-normal" }, unit)
+            )
+        )
+    )
+);
+
+const WeightSummary = ({ readings }) => {
+    const currentWeight = readings.length > 0 ? readings[readings.length - 1].weight : null;
+    const initialWeight = readings.length > 0 ? readings[0].weight : null;
+    const averageWeight = readings.length > 0
+        ? readings.reduce((acc, r) => acc + r.weight, 0) / readings.length
+        : null;
+
+    let change = 0;
+    if (currentWeight !== null && initialWeight !== null && readings.length > 1) {
+        change = currentWeight - initialWeight;
+    }
+
+    const getChangeIcon = () => {
+        if (change > 0.1) return React.createElement(TrendingUp, { size: 24, className: "text-red-500" });
+        if (change < -0.1) return React.createElement(TrendingDown, { size: 24, className: "text-green-500" });
+        return React.createElement(Minus, { size: 24 });
+    }
+    
+    const getChangeColor = () => {
+        if (change > 0.1) return 'text-red-500';
+        if (change < -0.1) return 'text-green-500';
+        return 'text-slate-500 dark:text-slate-400';
+    }
+
+    return (
+        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg" },
+            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4" }, "Weight Summary"),
+            React.createElement('div', { className: "space-y-4" },
+                React.createElement(WeightStatCard, { 
+                    title: "Current Weight", 
+                    value: currentWeight !== null ? currentWeight.toFixed(1) : '--', 
+                    unit: "lbs", 
+                    icon: React.createElement(Scale, { size: 24 }) 
+                }),
+                React.createElement('div', { className: "flex items-center p-4 bg-slate-100 dark:bg-slate-700 rounded-lg" },
+                    React.createElement('div', { className: "p-3 mr-4 bg-slate-200 dark:bg-slate-600 rounded-full" }, getChangeIcon()),
+                    React.createElement('div', null,
+                        React.createElement('p', { className: "text-sm font-medium text-slate-500 dark:text-slate-400" }, "Total Change"),
+                        React.createElement('p', { className: `text-xl font-semibold ${getChangeColor()}` },
+                           `${change >= 0 ? '+' : ''}${readings.length > 1 ? change.toFixed(1) : '--'}`,
+                           React.createElement('span', { className: "text-sm font-normal" }, " lbs")
+                        )
+                    )
+                ),
+                 React.createElement(WeightStatCard, { 
+                    title: "Average Weight", 
+                    value: averageWeight !== null ? averageWeight.toFixed(1) : '--', 
+                    unit: "lbs", 
+                    icon: React.createElement(Scale, { size: 24 }) 
+                })
+            )
+        )
+    );
+};
+// --- End of components/WeightSummary.tsx ---
+
+// --- Start of App.tsx ---
+const App = () => {
+    const [readings, setReadings] = useState([]);
+    const [weightReadings, setWeightReadings] = useState([]);
+
+    useEffect(() => {
+        try {
+            const storedReadings = localStorage.getItem('bpReadings');
+            if (storedReadings) {
+                const parsedReadings = JSON.parse(storedReadings);
+                setReadings(parsedReadings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+            }
+        } catch (e) { console.error("Failed to parse BP readings", e); }
+
+        try {
+            const storedWeightReadings = localStorage.getItem('weightReadings');
+            if (storedWeightReadings) {
+                const parsedReadings = JSON.parse(storedWeightReadings);
+                setWeightReadings(parsedReadings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+            }
+        } catch (e) { console.error("Failed to parse weight readings", e); }
+    }, []);
+
+    const updateReadings = useCallback((newReadings) => {
+        const sorted = [...newReadings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setReadings(sorted);
+        localStorage.setItem('bpReadings', JSON.stringify(sorted));
+    }, []);
+
+    const updateWeightReadings = useCallback((newReadings) => {
+        const sorted = [...newReadings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setWeightReadings(sorted);
+        localStorage.setItem('weightReadings', JSON.stringify(sorted));
+    }, []);
+
+    const addReading = useCallback((reading) => {
+        updateReadings([...readings, { ...reading, id: Date.now().toString() }]);
+    }, [readings, updateReadings]);
+
+    const deleteReading = useCallback((id) => {
+        updateReadings(readings.filter(r => r.id !== id));
+    }, [readings, updateReadings]);
+
+    const addWeightReading = useCallback((reading) => {
+        updateWeightReadings([...weightReadings, { ...reading, id: Date.now().toString() }]);
+    }, [weightReadings, updateWeightReadings]);
+
+    const deleteWeightReading = useCallback((id) => {
+        updateWeightReadings(weightReadings.filter(r => r.id !== id));
+    }, [weightReadings, updateWeightReadings]);
+
+    const memoizedStats = useMemo(() => {
+        if (readings.length === 0) return { avgSystolic: 0, avgDiastolic: 0, avgPulse: 0 };
+        const totalSystolic = readings.reduce((acc, r) => acc + r.systolic, 0);
+        const totalDiastolic = readings.reduce((acc, r) => acc + r.diastolic, 0);
+        const avgSystolic = Math.round(totalSystolic / readings.length);
+        const avgDiastolic = Math.round(totalDiastolic / readings.length);
+        const avgPulse = avgSystolic - avgDiastolic;
+        return { avgSystolic, avgDiastolic, avgPulse };
+    }, [readings]);
+
+    return (
+        React.createElement('div', { className: "min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200" },
+            React.createElement('main', { className: "container mx-auto p-4 sm:p-6" },
+                React.createElement('header', { className: "mb-8 text-center" },
+                    React.createElement('div', { className: "flex items-center justify-center gap-4" },
+                        React.createElement(HeartPulse, { className: "h-10 w-10 text-red-500" }),
+                        React.createElement('h1', { className: "text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white" }, "Health Tracker")
+                    ),
+                    React.createElement('p', { className: "mt-2 text-lg text-slate-600 dark:text-slate-400" }, "Monitor your blood pressure and weight.")
+                ),
+                React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8" },
+                    React.createElement('div', { className: "lg:col-span-1 space-y-6" },
+                        React.createElement(ReadingForm, { onAddReading: addReading }),
+                        React.createElement(WeightForm, { onAddReading: addWeightReading }),
+                        React.createElement(SummaryStats, { stats: memoizedStats }),
+                        React.createElement(WeightSummary, { readings: weightReadings })
+                    ),
+                    React.createElement('div', { className: "lg:col-span-2 space-y-6" },
+                        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg" },
+                            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4" }, "Blood Pressure History"),
+                            React.createElement(ReadingsTable, { readings: readings, onDeleteReading: deleteReading })
+                        ),
+                        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg h-80 sm:h-96" },
+                            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4" }, "Blood Pressure Trends"),
+                            React.createElement(PressureChart, { data: readings })
+                        ),
+                        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg" },
+                            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4" }, "Weight History"),
+                            React.createElement(WeightTable, { readings: weightReadings, onDeleteReading: deleteWeightReading })
+                        ),
+                        React.createElement('div', { className: "bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg h-80 sm:h-96" },
+                            React.createElement('h2', { className: "text-xl sm:text-2xl font-semibold mb-4" }, "Weight Trends"),
+                            React.createElement(WeightChart, { data: weightReadings })
+                        )
+                    )
+                )
+            )
+        )
+    );
+};
+// --- End of App.tsx ---
+
+// --- Start of index.tsx ---
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  React.createElement(React.StrictMode, null, React.createElement(App))
+);
+// --- End of index.tsx ---
+</script>
+
+    <script>
+      // --- Service Worker Registration ---
+      if ('serviceWorker' in navigator) {
+        const serviceWorkerCode = `
+          const CACHE_NAME = 'health-tracker-cache-v3';
+          const urlsToCache = ['./', './index.html'];
+
+          self.addEventListener('install', event => {
+            self.skipWaiting();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+            );
+          });
+
+          self.addEventListener('fetch', event => {
+            if (event.request.method !== 'GET' || event.request.url.startsWith('chrome-extension://')) {
+              return;
+            }
+            if (event.request.url.includes('aistudiocdn.com')) {
+              event.respondWith(
+                caches.open(CACHE_NAME).then(cache =>
+                  fetch(event.request).then(response => {
+                    if (response.status === 200) {
+                      cache.put(event.request, response.clone());
+                    }
+                    return response;
+                  }).catch(() => cache.match(event.request))
+                )
+              );
+              return;
+            }
+            event.respondWith(
+              caches.match(event.request).then(response => response || fetch(event.request))
+            );
+          });
+
+          self.addEventListener('activate', event => {
+            const cacheWhitelist = [CACHE_NAME];
+            event.waitUntil(
+              caches.keys().then(cacheNames => Promise.all(
+                cacheNames.map(cacheName => {
+                  if (cacheWhitelist.indexOf(cacheName) === -1) {
+                    return caches.delete(cacheName);
+                  }
+                })
+              )).then(() => self.clients.claim())
+            );
+          });
+        `;
+        
+        window.addEventListener('load', () => {
+          try {
+            const blob = new Blob([serviceWorkerCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl)
+              .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              })
+              .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+              });
+          } catch(e) {
+            console.error('Service worker registration failed with error:', e);
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

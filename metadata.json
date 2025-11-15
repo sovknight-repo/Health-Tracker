@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Blood Pressure Tracker & Analyzer",
+  "description": "An application to log, visualize, and analyze blood pressure readings over time with insights powered by the Gemini API.",
+  "requestFramePermissions": []
+}
